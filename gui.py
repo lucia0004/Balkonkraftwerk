@@ -70,8 +70,9 @@ with col7:
 with col8:
     cost_PV = st.number_input("Preis der gesamten Anlage in €", value=1000)
 
-st.markdown("<div style='margin-top: 100px;'></div>", unsafe_allow_html=True)
-        
+
+
+
 if st.button("▶ Run Simulation"):
     with st.spinner("Simulation running"):
         get_pvgis_hourly(
@@ -211,6 +212,8 @@ if "kpi" in st.session_state:
     total_savings = monthly_savings.cumsum()
 
     total_savings_with_cost = total_savings - cost_PV
+    if (total_savings_with_cost)<0:
+        total_savings_with_cost=0
 
 
     roi_idx = list(total_savings_with_cost[total_savings_with_cost >= 0].index)[0]
@@ -319,6 +322,5 @@ if "kpi" in st.session_state:
     #     st.metric("Imported Energy", f"{Import:.1f}")
 
     # st.metric("Einsparung pro Jahr", f"{saving:.1f}")
-
 
 
