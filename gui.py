@@ -212,60 +212,57 @@ if "kpi" in st.session_state:
     total_savings = monthly_savings.cumsum()
 
     total_savings_with_cost = total_savings - cost_PV
-    if total_savings_with_cost<0:
-        total_savings_with_cost=0
 
-    else:
-        roi_idx = list(total_savings_with_cost[total_savings_with_cost >= 0].index)[0]
-        roi_str = roi_idx.strftime("%b-%Y") 
+    roi_idx = list(total_savings_with_cost[total_savings_with_cost >= 0].index)[0]
+    roi_str = roi_idx.strftime("%b-%Y") 
 
 
-        fig = go.Figure()
+    fig = go.Figure()
 
-        fig.add_trace(
-            go.Scatter(
-                x=total_savings_with_cost.index,
-                y=total_savings_with_cost.values,
-                mode="lines+markers",
-                name="Kumulierte Einsparungen"
-            )
+    fig.add_trace(
+        go.Scatter(
+            x=total_savings_with_cost.index,
+            y=total_savings_with_cost.values,
+            mode="lines+markers",
+            name="Kumulierte Einsparungen"
         )
+    )
 
-        fig.add_trace(
-            go.Scatter(
-                x=[total_savings_with_cost.index[0], total_savings_with_cost.index[-1]],
-                y=[0, 0],
-                mode="lines",
-                line=dict(color="red", dash="dash"),
-                name="ROI (0 €)"
-            )
+    fig.add_trace(
+        go.Scatter(
+            x=[total_savings_with_cost.index[0], total_savings_with_cost.index[-1]],
+            y=[0, 0],
+            mode="lines",
+            line=dict(color="red", dash="dash"),
+            name="ROI (0 €)"
         )
+    )
 
-        fig.update_layout(
-            title="Installation des Balkonkraftwerks ab 2026 (Prognose)",
-            xaxis_title="Monat",
-            yaxis_title="Kumulierte Einsparungen (€)",
-            template="plotly_dark",
-            legend=dict(
-                orientation="h",
-                yanchor="bottom",
-                y=-0.3,   # below plot
-                xanchor="center",
-                x=0.5
-            ),
-            margin=dict(t=50, b=80)  # extra space for legend
-        )
+    fig.update_layout(
+        title="Installation des Balkonkraftwerks ab 2026 (Prognose)",
+        xaxis_title="Monat",
+        yaxis_title="Kumulierte Einsparungen (€)",
+        template="plotly_dark",
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.3,   # below plot
+            xanchor="center",
+            x=0.5
+        ),
+        margin=dict(t=50, b=80)  # extra space for legend
+    )
 
 
-        col1, col2 = st.columns([3, 1])
+    col1, col2 = st.columns([3, 1])
 
-        with col1:
-            st.plotly_chart(fig, use_container_width=True)
+    with col1:
+        st.plotly_chart(fig, use_container_width=True)
 
-        with col2:
-            st.markdown("<div style='margin-top: 50px;'></div>", unsafe_allow_html=True)
-            st.write(f"**Investition:** {cost_PV} €")
-            st.write(f"**ROI erreicht:** {roi_str}")
+    with col2:
+        st.markdown("<div style='margin-top: 50px;'></div>", unsafe_allow_html=True)
+        st.write(f"**Investition:** {cost_PV} €")
+        st.write(f"**ROI erreicht:** {roi_str}")
 
 
 
@@ -322,5 +319,6 @@ if "kpi" in st.session_state:
     #     st.metric("Imported Energy", f"{Import:.1f}")
 
     # st.metric("Einsparung pro Jahr", f"{saving:.1f}")
+
 
 
