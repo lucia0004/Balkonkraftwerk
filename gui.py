@@ -105,19 +105,48 @@ if "kpi" in st.session_state:
     demand, solar, consumed_from_solar, battery_charge, battery_discharge, Import, saving = st.session_state["kpi"]
     data = st.session_state["data"]
 
-    st.header("Ergebnis")
+    st.header("PV-Erträge")
 
-    st.subheader("PV-Erträge")
     st.metric("Jährlicher PV-Ertrag", f"{solar:.1f} kWh")
 
     balkonkraftwerk = consumed_from_solar + battery_discharge
     eingespeist = solar - balkonkraftwerk
+    anteil = balkonkraftwerk/solar*100
 
     col1, col2 = st.columns(2)
     with col1:
         st.metric("davon selbst genutzt:", f"{balkonkraftwerk:.1f} kWh")
     with col2:
         st.metric("davon unvergütet eingespeist", f"{eingespeist:.1f} kWh")
+
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        fig = go.Figure(data=[go.Pie(
+            labels=['Direktverbrauch', 'Ladung Batterie', 'Netzeinspeisung'],
+            values=[consumed_from_solar, battery_charge, eingespeist],
+            hole=0.3,
+            marker=dict(colors=['#FDB813', '#2CA02C', '#1F77B4'])
+        )])
+        fig.update_layout(
+            title=dict(
+            text='Nutzung des Stroms'),
+            template='plotly_dark',
+            legend=dict(
+                orientation="v",
+                yanchor="middle",
+                y=0.7,
+                xanchor="right",
+                x=0 
+            ),
+            margin=dict(r=30)
+        )
+        st.plotly_chart(fig)
+    with col2:
+        st.markdown("<div style='margin-top: 160px;'></div>", unsafe_allow_html=True)
+        st.metric("Eigenverbrauchsanteil", f"{anteil:.1f} %")
+
 
 
     st.subheader("Visualisierung einer Woche")
@@ -159,9 +188,10 @@ if "kpi" in st.session_state:
 
 
     fig = go.Figure(data=[go.Pie(
-        labels=['PV-Zelle', 'Batterie', 'Netzimport'],
+        labels=['Direkverbrauch PV', 'Entnahme Batterie', 'Netzbezug'],
         values=[consumed_from_solar, battery_discharge, Import],
-        hole=0.3
+        hole=0.3,
+        marker=dict(colors=['#FDB813', '#2CA02C', '#1F77B4'])
     )])
     fig.update_layout(
         title=dict(
@@ -185,7 +215,7 @@ if "kpi" in st.session_state:
    
     with col2: 
         st.markdown("<div style='margin-top: 160px;'></div>", unsafe_allow_html=True)
-        st.metric("Eigenversorgung", f"{selfsuf:.1f} %")
+        st.metric("Autarkiegrad", f"{selfsuf:.1f} %")
 
         
     st.subheader("Finanzielle Ergebnisse")
@@ -212,113 +242,63 @@ if "kpi" in st.session_state:
     total_savings = monthly_savings.cumsum()
 
     total_savings_with_cost = total_savings - cost_PV
-
-    roi_idx = list(total_savings_with_cost[total_savings_with_cost >= 0].index)[0]
-    roi_str = roi_idx.strftime("%b-%Y") 
-
-
-    fig = go.Figure()
-
-    fig.add_trace(
-        go.Scatter(
-            x=total_savings_with_cost.index,
-            y=total_savings_with_cost.values,
-            mode="lines+markers",
-            name="Kumulierte Einsparungen"
-        )
-    )
-
-    fig.add_trace(
-        go.Scatter(
-            x=[total_savings_with_cost.index[0], total_savings_with_cost.index[-1]],
-            y=[0, 0],
-            mode="lines",
-            line=dict(color="red", dash="dash"),
-            name="ROI (0 €)"
-        )
-    )
-
-    fig.update_layout(
-        title="Installation des Balkonkraftwerks ab 2026 (Prognose)",
-        xaxis_title="Monat",
-        yaxis_title="Kumulierte Einsparungen (€)",
-        template="plotly_dark",
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=-0.3,   # below plot
-            xanchor="center",
-            x=0.5
-        ),
-        margin=dict(t=50, b=80)  # extra space for legend
-    )
-
-
-    col1, col2 = st.columns([3, 1])
-
-    with col1:
-        st.plotly_chart(fig, use_container_width=True)
-
-    with col2:
-        st.markdown("<div style='margin-top: 50px;'></div>", unsafe_allow_html=True)
-        st.write(f"**Investition:** {cost_PV} €")
-        st.write(f"**ROI erreicht:** {roi_str}")
-
-
-
-
-
-
-
-
-
-
-
-
     
+    mask = total_savings_with_cost >= 0
+
+    if mask.any():
+        roi_idx = mask.idxmax()   # first index where value becomes >= 0
+        roi_str = roi_idx.strftime("%b-%Y") 
+        surplus_10y = total_savings_with_cost.iloc[119]
+        fig = go.Figure()
+
+        fig.add_trace(
+            go.Scatter(
+                x=total_savings_with_cost.index,
+                y=total_savings_with_cost.values,
+                mode="lines+markers",
+                name="Kumulierte Einsparungen"
+            )
+        )
+
+        fig.add_trace(
+            go.Scatter(
+                x=[total_savings_with_cost.index[0], total_savings_with_cost.index[-1]],
+                y=[0, 0],
+                mode="lines",
+                line=dict(color="red", dash="dash"),
+                name="ROI (0 €)"
+            )
+        )
+
+        fig.update_layout(
+            title="Installation des Balkonkraftwerks ab 2026 (Prognose)",
+            xaxis_title="Monat",
+            yaxis_title="Kumulierte Einsparungen (€)",
+            template="plotly_dark",
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=-0.3,   # below plot
+                xanchor="center",
+                x=0.5
+            ),
+            margin=dict(t=50, b=80)  # extra space for legend
+        )
 
 
+        col1, col2 = st.columns([3, 1])
 
+        with col1:
+            st.plotly_chart(fig, use_container_width=True)
 
-
-
- 
-
-
-
-
-
-
-    # st.metric("Strombedarf gesamt (kWh)", f"{demand:.1f}")
-
-    # balkonkraftwerk = consumed_from_solar+battery_discharge
-    # st.metric("Strom gedeckt durch Balkonkraftwerk (kWh)", f"{balkonkraftwerk:.1f}")
-
-    # unabhaengigkeit = balkonkraftwerk/demand*100
-    # st.metric("Unabhängigkeit in %", f"{unabhaengigkeit:.1f}")
-
-
-    # # col1, col2 = st.columns(2)
-    # # with col1:
-    # #     st.metric("direkt Nutzung des Balkonkraftwerks", f"{consumed_from_solar:.1f}")
-    # # with col2:
-    # #     st.metric("Nutzung der Batterie", f"{battery_discharge:.1f}")
-
-
-    # st.metric("Total PV Generation (kWh)", f"{solar:.1f}")
-
-
-    # col1, col2 = st.columns(2)
-
-    # with col1:
-    #     st.metric("Self-consumed Solar (kWh)", f"{consumed_from_solar:.1f}")
-    #     st.metric("Battery Charge (kWh)", f"{battery_charge:.1f}")
-
-    # with col2:
-    #     st.metric("Battery Discharge (kWh)", f"{battery_discharge:.1f}")
-    #     st.metric("Imported Energy", f"{Import:.1f}")
-
-    # st.metric("Einsparung pro Jahr", f"{saving:.1f}")
-
-
+        with col2:
+            st.markdown("<div style='margin-top: 50px;'></div>", unsafe_allow_html=True)
+            st.write(f"**Investition:** {cost_PV} €")
+            st.write(f"**ROI erreicht:** {roi_str}")
+            st.write(f"**Gewinn nach 10 Jahren:** {surplus_10y:,.2f} €")
+    else:
+        roi_idx = None            # no ROI found
+        roi_str = "Balkonkraftwerk nicht rentabel"
+        st.write(f"**Investition:** {cost_PV} €")
+        st.write(f"{roi_str}")
 
