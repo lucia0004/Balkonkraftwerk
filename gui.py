@@ -11,6 +11,8 @@ from auswertung import auswertung
 
 
 
+#region Eingabeparameter
+
 st.title("Simulation eines Balkonkraftwerkes")
 st.markdown("Gib in den folgenden Feldern die Daten für deine PV-Anlage ein")
 
@@ -20,9 +22,9 @@ with st.container():
     st.markdown('<h3 style="font-size:20px; margin-bottom:5px;">📍 Standort des Balkonkraftwerks</h3>', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
-        ko_lat = st.number_input("Latitude", value=48.3667, format="%.4f")
+        ko_lat = st.number_input("Breitengrad", value=48.3667, format="%.4f")
     with col2:
-        ko_lon = st.number_input("Longitude", value=10.9000, format="%.4f")
+        ko_lon = st.number_input("Längengrad", value=10.9000, format="%.4f")
 
 with st.container():
     st.markdown('<h3 style="font-size:20px; margin-bottom:5px;">⚡Technische Daten der PV-Anlage</h3>', unsafe_allow_html=True)
@@ -37,7 +39,7 @@ with st.container():
 st.markdown('<h3 style="font-size:20px; margin-bottom:5px;">📅 Referenzjahr für Wetterdaten</h3>', unsafe_allow_html=True)
 year = st.number_input(
     "2005–2023", 
-    min_value=2005, max_value=2023, value=2010
+    min_value=2005, max_value=2023, value=2017
 )
 
 
@@ -50,7 +52,7 @@ eta_c = 0
 eta_d = 0
 
 if has_battery == "Ja":
-    battery_capacity = st.number_input("Kapazität der Batterie (kWh)", value=2.0, step=0.1)
+    battery_capacity = st.number_input("Kapazität der Batterie (kWh)", value=2.7, step=0.1)
     col5, col6 = st.columns(2)
     with col5:
         eta_c = st.slider("Wirkungsgrad Ladevorgang", min_value=0.5, max_value=1.0, value=0.9)
@@ -60,17 +62,15 @@ else:
     st.info("Keine Batterie ausgewählt. Batterieparameter werden ignoriert.")
 
 st.header("🔌Verbrauch")
-energy_consumption = st.number_input("Stromverbrauch pro Jahr in kWh", min_value=3000)    
+energy_consumption = st.number_input("Stromverbrauch pro Jahr in kWh", value=2500)    
 
 st.header("💶 Kosten")
 
 col7, col8 = st.columns(2)
 with col7:
-    costs_kWh = st.number_input("Preis pro kWh", value=0.35)
+    costs_kWh = st.number_input("Preis pro kWh", value=0.30)
 with col8:
-    cost_PV = st.number_input("Preis der gesamten Anlage in €", value=1000)
-
-
+    cost_PV = st.number_input("Preis der gesamten Anlage in €", value=1130)
 
 
 if st.button("▶ Run Simulation"):
@@ -100,6 +100,20 @@ if st.button("▶ Run Simulation"):
 
     st.success("Simulation complete!")
 
+#endregion
+
+
+#region Auswertung
+
+
+
+#endregion
+
+
+#region Ergebnisdarstellung
+
+
+
 if "kpi" in st.session_state:
 
     demand, solar, consumed_from_solar, battery_charge, battery_discharge, Import, saving = st.session_state["kpi"]
@@ -117,7 +131,7 @@ if "kpi" in st.session_state:
     with col1:
         st.metric("davon selbst genutzt:", f"{balkonkraftwerk:.1f} kWh")
     with col2:
-        st.metric("davon unvergütet eingespeist", f"{eingespeist:.1f} kWh")
+        st.metric("davon unvergütet eingespeist:", f"{eingespeist:.1f} kWh")
 
 
     col1, col2 = st.columns(2)
@@ -172,16 +186,28 @@ if "kpi" in st.session_state:
         in_watt,
         labels={
             "value": "Leistung (W)",
-            "index": "Datum",
+            "index": "",
             "h0_dyn": "Stromverbrauch",
             "solar_kWh": "PV Produktion"
+        },
+        color_discrete_map={
+        "Stromverbrauch": "#001AFF",  
+        "PV Produktion": "#D1BF00"    
         }
     )
 
     fig.update_layout(
         template="plotly_white",
         hovermode="x unified",
-        title="Stromverbrauch und PV-Erzeugung innerhalb einer Woche"
+        title="Stromverbrauch und PV-Erzeugung innerhalb einer Woche",
+        legend=dict(
+        orientation="h",
+        yanchor="top",
+        y=-0.2,        
+        xanchor="center",
+        x=0.5              
+        ),
+        legend_title_text="" 
     )
 
     st.plotly_chart(fig)
@@ -302,3 +328,5 @@ if "kpi" in st.session_state:
         st.write(f"**Investition:** {cost_PV} €")
         st.write(f"{roi_str}")
 
+
+#endregion
