@@ -112,7 +112,10 @@ if "data" in st.session_state:
     Import = data['Import'].sum()
     saving = data['savings'].sum()
 
-    st.header("PV-Erträge")
+    st.markdown(
+        "## PV-Erträge <sup style='font-size:0.4em'>[1]</sup>",
+        unsafe_allow_html=True
+    )
 
     st.metric("Jährlicher PV-Ertrag", f"{solar:.1f} kWh")
 
@@ -192,7 +195,9 @@ if "data" in st.session_state:
     fig.update_layout(
         template="plotly_white",
         hovermode="x unified",
-        title="Stromverbrauch und PV-Produktion innerhalb einer Woche",
+        title=dict(
+            text=("Stromverbrauch und PV-Produktion innerhalb einer Woche <sup style='font-size:0.6em'>[1][2]</sup>"
+            )),
         legend=dict(
         orientation="h",
         yanchor="top",
@@ -207,7 +212,7 @@ if "data" in st.session_state:
 
 
     fig = go.Figure(data=[go.Pie(
-        labels=['Direkverbrauch PV', 'Entnahme Batterie', 'Netzbezug'],
+        labels=['Direktverbrauch PV', 'Entnahme Batterie', 'Netzbezug'],
         values=[consumed_from_solar, battery_discharge, Import],
         hole=0.3,
         marker=dict(colors=['#FDB813', '#2CA02C', '#1F77B4'])
@@ -322,4 +327,20 @@ if "data" in st.session_state:
         st.write(f"{roi_str}")
 
 
+#endregion
+
+#region Quellen
+st.markdown("<a name='quelle-1'></a>", unsafe_allow_html=True)
+st.markdown("---")
+st.markdown(
+    """
+    <div style="font-size:12px; color:gray; text-align:center;">
+        Quellen:
+        <br>
+        <a href="https://re.jrc.ec.europa.eu/pvg_tools/de/" target="_blank">[1] PVGIS Daten</a> |
+        <a href="https://demandlib.readthedocs.io/en/latest/bdew.html" target="_blank">[2] Standardlastprofile</a> |
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 #endregion
