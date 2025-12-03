@@ -5,25 +5,21 @@ import holidays as holidays
 import plotly.express as px
 
 
-#region
+#region Simulation
 
 def simulation(df, battery_capacity_kWh, eta_charge, eta_discharge, price):
 
-    # Create empty battery columns (filled with zeros by default)
     df['SOC'] = 0.0
     df['Bat_Charge'] = 0.0
     df['Bat_Discharge'] = 0.0
     df['Bat_Energy'] = 0.0
 
-    # Initialize new solar flow columns
     df['solar_energy_to_consume'] = 0.0
     df['solar_energy_to_battery'] = 0.0
     df['savings'] = 0.0
 
-    # If battery capacity is 0 → skip battery simulation
     if battery_capacity_kWh == 0 or battery_capacity_kWh is None:
 
-        # PV covers load first, remainder is simply unused (no battery)
         df['solar_energy_to_consume'] = df[['h0_dyn', 'solar_kWh']].min(axis=1)
         df['solar_energy_to_battery'] = 0.0
 
@@ -33,7 +29,6 @@ def simulation(df, battery_capacity_kWh, eta_charge, eta_discharge, price):
 
         return df
 
-    # Otherwise simulate with battery
     battery = Battery(
         capacity_kWh=battery_capacity_kWh,
         charge_eff=eta_charge,
@@ -50,14 +45,12 @@ def simulation(df, battery_capacity_kWh, eta_charge, eta_discharge, price):
 
     for load, pv in zip(df["h0_dyn"], df["solar_kWh"]):
 
-        # Direct solar consumption
         direct_solar = min(load, pv)
         solar_to_consume.append(direct_solar)
 
         net_load = load - pv
 
         if net_load > 0:
-            # Need more energy → discharge battery
             delivered_energy = battery.discharge(net_load)
             battery_discharge.append(delivered_energy)
             grid_import.append(net_load - delivered_energy)
@@ -66,7 +59,6 @@ def simulation(df, battery_capacity_kWh, eta_charge, eta_discharge, price):
             solar_to_battery.append(0)
 
         else:
-            # Surplus PV → charge battery
             surplus_energy = -net_load
             stored_energy = battery.charge(surplus_energy)
 
@@ -118,17 +110,13 @@ class Battery:
 
     def discharge(self, energy_kWh):
         required_from_battery = energy_kWh / self.discharge_eff
-
-        # usable energy limited by 5% SoC floor
         usable_energy = (self.soc - self.min_soc) * self.capacity
         usable_energy = max(usable_energy, 0)
 
         if usable_energy >= required_from_battery:
-            # Battery can deliver everything
             self.soc -= required_from_battery / self.capacity
             delivered_energy = energy_kWh
         else:
-            # Battery can deliver only down to minimum SoC
             delivered_energy = usable_energy * self.discharge_eff
             self.soc = self.min_soc
 

@@ -7,14 +7,12 @@ from pvigs_import import get_pvgis_hourly
 from interpolation import interpolate_15min
 from verbrauchsdaten import stromdaten
 from batterierechnung import simulation
-from auswertung import auswertung
-
 
 
 #region Eingabeparameter
 
 st.title("Simulation eines Balkonkraftwerkes")
-st.markdown("Gib in den folgenden Feldern die Daten für deine PV-Anlage ein")
+st.markdown("Gib in den folgenden Feldern die Daten für deine PV-Anlage ein:")
 
 st.header("🔆 PV Anlage")
 
@@ -93,31 +91,26 @@ if st.button("▶ Run Simulation"):
             eta_discharge=eta_d,
             price=costs_kWh
         )
-        kpi = auswertung(data)
 
     st.session_state["data"] = data
-    st.session_state["kpi"] = kpi
-
     st.success("Simulation complete!")
 
 #endregion
 
 
-#region Auswertung
+#region Ergebnisse
 
+if "data" in st.session_state:
 
-
-#endregion
-
-
-#region Ergebnisdarstellung
-
-
-
-if "kpi" in st.session_state:
-
-    demand, solar, consumed_from_solar, battery_charge, battery_discharge, Import, saving = st.session_state["kpi"]
     data = st.session_state["data"]
+
+    demand=data['h0_dyn'].sum()
+    solar = data['solar_kWh'].sum()
+    consumed_from_solar = data['solar_energy_to_consume'].sum()
+    battery_charge = data['Bat_Charge'].sum()
+    battery_discharge = data['Bat_Discharge'].sum()
+    Import = data['Import'].sum()
+    saving = data['savings'].sum()
 
     st.header("PV-Erträge")
 
@@ -145,7 +138,7 @@ if "kpi" in st.session_state:
         )])
         fig.update_layout(
             title=dict(
-            text='Nutzung des Stroms'),
+            text='Nutzung des erzeugten Stroms'),
             template='plotly_dark',
             legend=dict(
                 orientation="v",
@@ -199,7 +192,7 @@ if "kpi" in st.session_state:
     fig.update_layout(
         template="plotly_white",
         hovermode="x unified",
-        title="Stromverbrauch und PV-Erzeugung innerhalb einer Woche",
+        title="Stromverbrauch und PV-Produktion innerhalb einer Woche",
         legend=dict(
         orientation="h",
         yanchor="top",
@@ -246,7 +239,7 @@ if "kpi" in st.session_state:
         
     st.subheader("Finanzielle Ergebnisse")
 
-    st.metric("Einsparung pro Jahr", f"{data["savings"].sum():.2f} €")
+    st.metric("Einsparung pro Jahr:", f"{data["savings"].sum():.2f} €")
 
 
     data_forecast = data.copy()
@@ -264,7 +257,7 @@ if "kpi" in st.session_state:
     data_repeated.index = new_index
     data_forecast = data_repeated
 
-    monthly_savings = data_forecast["savings"].resample("ME").sum()  # keep datetime index
+    monthly_savings = data_forecast["savings"].resample("ME").sum() 
     total_savings = monthly_savings.cumsum()
 
     total_savings_with_cost = total_savings - cost_PV
@@ -272,7 +265,7 @@ if "kpi" in st.session_state:
     mask = total_savings_with_cost >= 0
 
     if mask.any():
-        roi_idx = mask.idxmax()   # first index where value becomes >= 0
+        roi_idx = mask.idxmax()  
         roi_str = roi_idx.strftime("%b-%Y") 
         surplus_10y = total_savings_with_cost.iloc[119]
         fig = go.Figure()
@@ -304,11 +297,11 @@ if "kpi" in st.session_state:
             legend=dict(
                 orientation="h",
                 yanchor="bottom",
-                y=-0.3,   # below plot
+                y=-0.3,  
                 xanchor="center",
                 x=0.5
             ),
-            margin=dict(t=50, b=80)  # extra space for legend
+            margin=dict(t=50, b=80) 
         )
 
 
@@ -323,7 +316,7 @@ if "kpi" in st.session_state:
             st.write(f"**ROI erreicht:** {roi_str}")
             st.write(f"**Gewinn nach 10 Jahren:** {surplus_10y:,.2f} €")
     else:
-        roi_idx = None            # no ROI found
+        roi_idx = None         
         roi_str = "Balkonkraftwerk nicht rentabel"
         st.write(f"**Investition:** {cost_PV} €")
         st.write(f"{roi_str}")
