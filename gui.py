@@ -211,6 +211,10 @@ if "data" in st.session_state:
     st.plotly_chart(fig)
 
 
+    st.subheader("Herkunft des Strombedarfs")
+
+
+    
     fig = go.Figure(data=[go.Pie(
         labels=['Direktverbrauch PV', 'Entnahme Batterie', 'Netzbezug'],
         values=[consumed_from_solar, battery_discharge, Import],
@@ -219,7 +223,7 @@ if "data" in st.session_state:
     )])
     fig.update_layout(
         title=dict(
-        text='Herkunft des jährlichen Strombedarfs'),
+        text='Jährliche Summe'),
         template='plotly_dark',
         legend=dict(
             orientation="v",
@@ -241,7 +245,61 @@ if "data" in st.session_state:
         st.markdown("<div style='margin-top: 160px;'></div>", unsafe_allow_html=True)
         st.metric("Autarkiegrad", f"{selfsuf:.1f} %")
 
-        
+
+    date_input_2 = str(year)+"-07-01"
+
+    week_start_2 = st.date_input("Start der Woche", pd.to_datetime(date_input_2), key="week_start_2")
+    week_start_2 = pd.Timestamp(week_start_2)
+    week_end_2   = week_start_2 + pd.Timedelta(days=7)
+
+    data_filtered = data.loc[week_start_2:week_end_2]
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(
+        x=data_filtered.index,
+        y=data_filtered["Import"],
+        name="Netzbezug",
+        stackgroup="energy",
+        #mode="none",
+        line=dict(color="#128600"),
+    ))
+
+    fig.add_trace(go.Scatter(
+        x=data_filtered.index,
+        y=data_filtered["Bat_Discharge"],
+        name="Entnahme Batterie",
+        stackgroup="energy",
+        #mode="none",
+        line=dict(color="#3A93FF"),
+    ))
+
+    fig.add_trace(go.Scatter(
+        x=data_filtered.index,
+        y=data_filtered["solar_kWh"],
+        name="Direktverbrauch PV",
+        stackgroup="energy",
+        #mode="none",
+        line=dict(color="#D4A300")
+    ))
+
+    fig.add_trace(go.Scatter(
+        x=data_filtered.index,
+        y=data_filtered["h0_dyn"],
+        name="Strombedarf",
+        mode="lines",
+        line=dict(color="black",width=2)
+    ))
+
+    fig.update_layout(
+        template="plotly_white",
+        hovermode="x unified",
+        title="Zusammensetzung des Strombedarfs (Zeitlicher Verlauf)"
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+
+
     st.subheader("Finanzielle Ergebnisse")
 
     st.metric("Einsparung pro Jahr:", f"{data["savings"].sum():.2f} €")
